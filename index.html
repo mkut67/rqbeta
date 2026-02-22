@@ -2541,22 +2541,22 @@ function loop(){
             ctx.textAlign = 'right';
             
             // Pulsing effect
-            const pulseAlpha = 0.7 + Math.sin(F * 0.08) * 0.3;
-            const glowIntensity = 12 + Math.sin(F * 0.08) * 12;
+            const pulseAlpha = 0.8 + Math.sin(F * 0.08) * 0.2;
+            const glowIntensity = 8 + Math.sin(F * 0.08) * 8;
             
-            // Draw text to the left of portal
+            // Draw text to the left of portal - LOWER position
             const textX = psx - 80;
-            const textY = portal.y - 120;
+            const textY = portal.y - 40; // Changed from -120 to -40 (80 pixels lower)
             
-            ctx.shadowColor = 'rgba(20, 241, 149, ' + pulseAlpha + ')';
+            ctx.shadowColor = 'rgba(255, 255, 255, ' + (pulseAlpha * 0.6) + ')';
             ctx.shadowBlur = glowIntensity;
-            ctx.fillStyle = 'rgba(20, 241, 149, ' + pulseAlpha + ')';
+            ctx.fillStyle = 'rgba(255, 255, 255, ' + pulseAlpha + ')'; // Changed to white
             
             ctx.fillText('DOUBLE JUMP INTO', textX, textY - 30);
             ctx.fillText('PORTAL TO CASH OUT', textX, textY - 10);
             
             ctx.font = subFontSize + ' "Press Start 2P"';
-            ctx.fillStyle = 'rgba(153, 119, 204, ' + (pulseAlpha * 0.8) + ')';
+            ctx.fillStyle = 'rgba(200, 200, 200, ' + (pulseAlpha * 0.8) + ')'; // Light gray for subtitle
             ctx.shadowBlur = glowIntensity * 0.5;
             ctx.fillText('(or keep going)', textX, textY + 10);
             
@@ -2564,7 +2564,7 @@ function loop(){
             const arrowBounce = Math.sin(F * 0.1) * 8;
             ctx.font = arrowFontSize + ' "Press Start 2P"';
             ctx.textAlign = 'center';
-            ctx.fillStyle = 'rgba(20, 241, 149, ' + pulseAlpha + ')';
+            ctx.fillStyle = 'rgba(255, 255, 255, ' + pulseAlpha + ')'; // White arrow
             ctx.shadowBlur = glowIntensity;
             ctx.fillText('→', psx - 50, portal.y - 60 + arrowBounce);
             
