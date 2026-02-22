@@ -56,6 +56,14 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 #crashsub{font-size:clamp(12px,3vw,24px);color:#ff6644;text-shadow:0 0 10px #ff4400;margin-top:12px;}
 @keyframes crashani{to{transform:scale(1.08);}}
 
+/* Tutorial message for first portal */
+#tutorialMsg{position:absolute;font-size:13px;color:#14F195;text-shadow:0 0 12px rgba(20,241,149,.9);z-index:20;pointer-events:none;text-align:center;font-family:'Press Start 2P';line-height:1.6;opacity:0;transition:opacity .3s;}
+#tutorialMsg.show{opacity:1;animation:tutorialPulse .8s ease-in-out infinite alternate;}
+#tutorialArrow{position:absolute;font-size:32px;z-index:20;pointer-events:none;opacity:0;transition:opacity .3s;}
+#tutorialArrow.show{opacity:1;animation:arrowBounce 1s ease-in-out infinite;}
+@keyframes tutorialPulse{from{text-shadow:0 0 12px rgba(20,241,149,.9);transform:scale(1);}to{text-shadow:0 0 24px rgba(20,241,149,1),0 0 36px rgba(20,241,149,.6);transform:scale(1.05);}}
+@keyframes arrowBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+
 /* Mobile responsive styles */
 @media screen and (max-width: 768px) {
   #hud{padding:0 12px;height:48px;}
@@ -79,6 +87,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   #victoryDance{width:200px!important;height:200px!important;}
   #hint{font-size:11px;bottom:50px;}
   .brow{gap:6px;}
+  #tutorialMsg{font-size:11px;}
+  #tutorialArrow{font-size:28px;}
 }
 
 @media screen and (max-width: 480px) {
@@ -95,6 +105,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   .pbtn{font-size:9px;padding:10px 20px;}
   #victoryDance{width:160px!important;height:160px!important;}
   #hint{font-size:10px;bottom:40px;}
+  #tutorialMsg{font-size:9px;line-height:1.5;}
+  #tutorialArrow{font-size:24px;}
 }
 </style>
 </head>
@@ -128,6 +140,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 <div id="gambleResult" class="gambleResult"></div>
 <div id="livdiv"></div>
 <div id="hint">SPACE / TAP TO JUMP<br>(2 times to double jump)</div>
+<div id="tutorialMsg">DOUBLE JUMP INTO PORTAL<br>TO CASH OUT<br><span style="font-size:10px;color:#9977cc">(or keep going)</span></div>
+<div id="tutorialArrow">↓</div>
 <div id="crashbig">
   <div id="crashtext">GAME OVER</div>
   <div id="crashsub"></div>
@@ -1177,6 +1191,8 @@ function resetBalance() {
   updateBal();
 }
 let inputBlocked=false; // Bloquer les inputs après game over pendant 1.5s
+let isFirstRun = true; // Track if this is the first game from title screen
+let firstPortalSeen = false; // Track if first portal tutorial was shown
 let hero={x:0,y:0,vy:0,onGround:true,frame:0,inv:0,invincible:false,koAnimating:false,koFrame:0,koStartTime:0,doubleJump:false};
 let obstacles=[],enemies=[],projs=[],coins=[],platforms=[],bulls=[];
 let portal=null,portalOpen=false;
@@ -1552,6 +1568,7 @@ function startGame(){
   updateScore(); // Mettre à jour l'affichage du score à 0
   F=0;camX=0;camFrozen=false;
   inputBlocked=false; // Débloquer les inputs pour la nouvelle partie
+  firstPortalSeen=false; // Reset tutorial flag for new game
   obstacles=[];enemies=[];projs=[];coins=[];platforms=[];parts=[];bulls=[];spikeWall=null;spikeWallPending=false;
   portal=null;portalOpen=false;
   fallPhase=0;fallVel=0;fallOffset=0;groundFallY=0;collapseTimer=0;
@@ -1704,6 +1721,11 @@ function endWave(){
     multip = currentPortalMult;
     const m=document.getElementById('hm');m.textContent='×'+currentPortalMult.toFixed(2);
     m.className='hv '+(currentPortalMult>=maxMult*.85?'red':hero.invincible?'inv':'gold');
+    
+    // Show tutorial on first portal of first game
+    if(isFirstRun && !firstPortalSeen) {
+      firstPortalSeen = true;
+    }
   } else {
     // Portail normal - créer le portail avec son multiplicateur
     portal={x:hero.x+W*.7,y:portalY,t:0,life:660,final:false,mult:currentPortalMult,isHigh:isHighPortal};
@@ -1720,12 +1742,21 @@ function endWave(){
     multip = currentPortalMult;
     const m=document.getElementById('hm');m.textContent='×'+currentPortalMult.toFixed(2);
     m.className='hv '+(currentPortalMult>=maxMult*.85?'red':hero.invincible?'inv':'gold');
+    
+    // Show tutorial on first portal of first game
+    if(isFirstRun && !firstPortalSeen) {
+      firstPortalSeen = true;
+    }
   }
 }
 
 function triggerCrash(){
   if(state!=='playing')return;
   state='crashing';
+  
+  // Hide tutorial
+  document.getElementById('tutorialMsg').classList.remove('show');
+  document.getElementById('tutorialArrow').classList.remove('show');
   
   // Bloquer les inputs pendant 1.5 secondes
   inputBlocked = true;
@@ -1758,6 +1789,10 @@ function triggerCrash(){
 
 function cashOut(){
   if(state!=='playing')return;state='cashed';
+  
+  // Hide tutorial
+  document.getElementById('tutorialMsg').classList.remove('show');
+  document.getElementById('tutorialArrow').classList.remove('show');
   
   // Bloquer les inputs pendant 1.5 secondes
   inputBlocked = true;
@@ -2308,6 +2343,9 @@ function startGameFromVictory() {
     document.getElementById('bipVictory').value = bet.toFixed(2);
   }
   
+  // Mark that this is not a first run from title screen
+  isFirstRun = false;
+  
   // Cacher l'écran de victoire
   document.getElementById('victoryScreen').style.display = 'none';
   document.getElementById('victoryScreen').style.opacity = '0';
@@ -2503,6 +2541,23 @@ function loop(){
           }
         }else{
           drawPortal(psx,portal.y,portal.t);
+          
+          // Show tutorial message on first portal
+          if(firstPortalSeen && isFirstRun) {
+            const tutMsg = document.getElementById('tutorialMsg');
+            const tutArrow = document.getElementById('tutorialArrow');
+            const msgX = psx + 120; // Position to the right of portal
+            const msgY = portal.y - 220; // Above the portal
+            tutMsg.style.left = msgX + 'px';
+            tutMsg.style.top = msgY + 'px';
+            tutMsg.classList.add('show');
+            tutArrow.style.left = (psx - 20) + 'px';
+            tutArrow.style.top = (portal.y - 150) + 'px';
+            tutArrow.classList.add('show');
+          } else {
+            document.getElementById('tutorialMsg').classList.remove('show');
+            document.getElementById('tutorialArrow').classList.remove('show');
+          }
           
           // Collision avec le toit du portail (plateforme)
           const portalRoofY = portal.y - 130; // Position du toit
