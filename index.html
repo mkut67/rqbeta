@@ -56,14 +56,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 #crashsub{font-size:clamp(12px,3vw,24px);color:#ff6644;text-shadow:0 0 10px #ff4400;margin-top:12px;}
 @keyframes crashani{to{transform:scale(1.08);}}
 
-/* Tutorial message for first portal */
-#tutorialMsg{position:absolute;font-size:13px;color:#14F195;text-shadow:0 0 12px rgba(20,241,149,.9);z-index:20;pointer-events:none;text-align:center;font-family:'Press Start 2P';line-height:1.6;opacity:0;transition:opacity .3s;}
-#tutorialMsg.show{opacity:1;animation:tutorialPulse .8s ease-in-out infinite alternate;}
-#tutorialArrow{position:absolute;font-size:32px;z-index:20;pointer-events:none;opacity:0;transition:opacity .3s;}
-#tutorialArrow.show{opacity:1;animation:arrowBounce 1s ease-in-out infinite;}
-@keyframes tutorialPulse{from{text-shadow:0 0 12px rgba(20,241,149,.9);transform:scale(1);}to{text-shadow:0 0 24px rgba(20,241,149,1),0 0 36px rgba(20,241,149,.6);transform:scale(1.05);}}
-@keyframes arrowBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
-
 /* Mobile responsive styles */
 @media screen and (max-width: 768px) {
   #hud{padding:0 12px;height:48px;}
@@ -87,8 +79,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   #victoryDance{width:200px!important;height:200px!important;}
   #hint{font-size:11px;bottom:50px;}
   .brow{gap:6px;}
-  #tutorialMsg{font-size:11px;}
-  #tutorialArrow{font-size:28px;}
 }
 
 @media screen and (max-width: 480px) {
@@ -105,8 +95,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
   .pbtn{font-size:9px;padding:10px 20px;}
   #victoryDance{width:160px!important;height:160px!important;}
   #hint{font-size:10px;bottom:40px;}
-  #tutorialMsg{font-size:9px;line-height:1.5;}
-  #tutorialArrow{font-size:24px;}
 }
 </style>
 </head>
@@ -140,8 +128,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Pr
 <div id="gambleResult" class="gambleResult"></div>
 <div id="livdiv"></div>
 <div id="hint">SPACE / TAP TO JUMP<br>(2 times to double jump)</div>
-<div id="tutorialMsg">DOUBLE JUMP INTO PORTAL<br>TO CASH OUT<br><span style="font-size:10px;color:#9977cc">(or keep going)</span></div>
-<div id="tutorialArrow">↓</div>
 <div id="crashbig">
   <div id="crashtext">GAME OVER</div>
   <div id="crashsub"></div>
@@ -1754,9 +1740,8 @@ function triggerCrash(){
   if(state!=='playing')return;
   state='crashing';
   
-  // Hide tutorial
-  document.getElementById('tutorialMsg').classList.remove('show');
-  document.getElementById('tutorialArrow').classList.remove('show');
+  // Mark that first run is complete
+  isFirstRun = false;
   
   // Bloquer les inputs pendant 1.5 secondes
   inputBlocked = true;
@@ -1790,9 +1775,8 @@ function triggerCrash(){
 function cashOut(){
   if(state!=='playing')return;state='cashed';
   
-  // Hide tutorial
-  document.getElementById('tutorialMsg').classList.remove('show');
-  document.getElementById('tutorialArrow').classList.remove('show');
+  // Mark that first run is complete
+  isFirstRun = false;
   
   // Bloquer les inputs pendant 1.5 secondes
   inputBlocked = true;
@@ -2542,21 +2526,49 @@ function loop(){
         }else{
           drawPortal(psx,portal.y,portal.t);
           
-          // Show tutorial message on first portal
-          if(firstPortalSeen && isFirstRun) {
-            const tutMsg = document.getElementById('tutorialMsg');
-            const tutArrow = document.getElementById('tutorialArrow');
-            const msgX = psx + 120; // Position to the right of portal
-            const msgY = portal.y - 220; // Above the portal
-            tutMsg.style.left = msgX + 'px';
-            tutMsg.style.top = msgY + 'px';
-            tutMsg.classList.add('show');
-            tutArrow.style.left = (psx - 20) + 'px';
-            tutArrow.style.top = (portal.y - 150) + 'px';
-            tutArrow.classList.add('show');
-          } else {
-            document.getElementById('tutorialMsg').classList.remove('show');
-            document.getElementById('tutorialArrow').classList.remove('show');
+          // Draw tutorial message on canvas for first portal
+          if(firstPortalSeen && isFirstRun && psx > 0 && psx < W) {
+            ctx.save();
+            
+            // Responsive font sizes
+            const isMobile = W <= 480;
+            const isTablet = W <= 768 && W > 480;
+            const mainFontSize = isMobile ? '8px' : isTablet ? '10px' : '11px';
+            const subFontSize = isMobile ? '7px' : isTablet ? '8px' : '9px';
+            const arrowFontSize = isMobile ? '20px' : isTablet ? '24px' : '28px';
+            
+            ctx.font = mainFontSize + ' "Press Start 2P"';
+            ctx.textAlign = 'right';
+            
+            // Pulsing effect
+            const pulseAlpha = 0.7 + Math.sin(F * 0.08) * 0.3;
+            const glowIntensity = 12 + Math.sin(F * 0.08) * 12;
+            
+            // Draw text to the left of portal
+            const textX = psx - 80;
+            const textY = portal.y - 120;
+            
+            ctx.shadowColor = 'rgba(20, 241, 149, ' + pulseAlpha + ')';
+            ctx.shadowBlur = glowIntensity;
+            ctx.fillStyle = 'rgba(20, 241, 149, ' + pulseAlpha + ')';
+            
+            ctx.fillText('DOUBLE JUMP INTO', textX, textY - 30);
+            ctx.fillText('PORTAL TO CASH OUT', textX, textY - 10);
+            
+            ctx.font = subFontSize + ' "Press Start 2P"';
+            ctx.fillStyle = 'rgba(153, 119, 204, ' + (pulseAlpha * 0.8) + ')';
+            ctx.shadowBlur = glowIntensity * 0.5;
+            ctx.fillText('(or keep going)', textX, textY + 10);
+            
+            // Draw bouncing arrow
+            const arrowBounce = Math.sin(F * 0.1) * 8;
+            ctx.font = arrowFontSize + ' "Press Start 2P"';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(20, 241, 149, ' + pulseAlpha + ')';
+            ctx.shadowBlur = glowIntensity;
+            ctx.fillText('→', psx - 50, portal.y - 60 + arrowBounce);
+            
+            ctx.restore();
           }
           
           // Collision avec le toit du portail (plateforme)
