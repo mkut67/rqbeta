@@ -1037,24 +1037,96 @@ function drawUnicorn(sx,sy,t,trail){
 function drawPortal(sx,sy,t){
   const pulse=.65+Math.sin(t*.1)*.35, blink=Math.sin(t*.18)>0;
   const x=sx,y=sy;
-  const ag=ctx.createRadialGradient(x,y,10,x,y,120);
-  ag.addColorStop(0,`rgba(153,69,255,${.38*pulse})`);ag.addColorStop(.4,`rgba(20,241,149,${.18*pulse})`);ag.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=ag;ctx.beginPath();ctx.arc(x,y,120,0,Math.PI*2);ctx.fill();
-  const pg=ctx.createLinearGradient(x-52,0,x-36,0);pg.addColorStop(0,'#440080');pg.addColorStop(.4,'#7030c0');pg.addColorStop(1,'#440080');
-  rr(x-54,y-118,19,122,5,pg);rr(x-52,y-116,5,118,3,'rgba(255,255,255,.1)');
-  const pg2=ctx.createLinearGradient(x+36,0,x+54,0);pg2.addColorStop(0,'#440080');pg2.addColorStop(.6,'#7030c0');pg2.addColorStop(1,'#440080');
-  rr(x+35,y-118,19,122,5,pg2);
-  if(blink){[-113,-88,-63,-38].forEach(oy=>{circle(x-44,y+oy,4,'#14F195');ctx.fillStyle=`rgba(20,241,149,${.4*pulse})`;ctx.beginPath();ctx.arc(x-44,y+oy,8,0,Math.PI*2);ctx.fill();circle(x+44,y+oy,4,'#14F195');ctx.fillStyle=`rgba(20,241,149,${.4*pulse})`;ctx.beginPath();ctx.arc(x+44,y+oy,8,0,Math.PI*2);ctx.fill();});}
-  const archG=ctx.createLinearGradient(x-54,y-128,x+54,y-120);archG.addColorStop(0,'#440080');archG.addColorStop(.5,'#9030e8');archG.addColorStop(1,'#440080');
-  rr(x-54,y-130,108,16,7,archG);rr(x-50,y-128,100,6,3,'rgba(255,255,255,.1)');
-  circle(x-45,y-122,6,'#9945FF');circle(x+45,y-122,6,'#9945FF');circle(x,y-128,7,'#14F195');
-  ctx.save();ctx.beginPath();ctx.ellipse(x,y-58,32,55,0,0,Math.PI*2);ctx.clip();
-  ctx.fillStyle=`rgba(55,8,115,${.82*pulse})`;ctx.fillRect(x-36,y-116,72,118);
-  for(let r=6;r>=0;r--){const a=(.18+r*.06)*pulse,hue=((F*2.5+r*44))%360;ctx.strokeStyle=`hsla(${hue},100%,62%,${a})`;ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(x,y-58,5+r*4,9+r*7,0,0,Math.PI*2);ctx.stroke();}
-  const cc=ctx.createRadialGradient(x,y-58,0,x,y-58,18);cc.addColorStop(0,`rgba(190,140,255,${.45*pulse})`);cc.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=cc;ctx.beginPath();ctx.arc(x,y-58,18,0,Math.PI*2);ctx.fill();
+  
+  // Aura radiale (glow effect)
+  const ag=ctx.createRadialGradient(x,y-60,10,x,y-60,120);
+  ag.addColorStop(0,`rgba(153,69,255,${.38*pulse})`);
+  ag.addColorStop(.4,`rgba(20,241,149,${.18*pulse})`);
+  ag.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=ag;
+  ctx.beginPath();
+  ctx.arc(x,y-60,120,0,Math.PI*2);
+  ctx.fill();
+  
+  // Anneau externe (cerceau principal)
+  const ringGrad=ctx.createLinearGradient(x-50,y-110,x+50,y-10);
+  ringGrad.addColorStop(0,'#440080');
+  ringGrad.addColorStop(.3,'#7030c0');
+  ringGrad.addColorStop(.5,'#9030e8');
+  ringGrad.addColorStop(.7,'#7030c0');
+  ringGrad.addColorStop(1,'#440080');
+  
+  ctx.strokeStyle=ringGrad;
+  ctx.lineWidth=14;
+  ctx.beginPath();
+  ctx.arc(x,y-60,50,0,Math.PI*2);
+  ctx.stroke();
+  
+  // Highlight sur l'anneau
+  ctx.strokeStyle='rgba(255,255,255,.15)';
+  ctx.lineWidth=6;
+  ctx.beginPath();
+  ctx.arc(x-3,y-63,50,Math.PI*1.2,Math.PI*1.8);
+  ctx.stroke();
+  
+  // Points lumineux clignotants sur l'anneau
+  if(blink){
+    const angles = [0, Math.PI/2, Math.PI, Math.PI*1.5];
+    angles.forEach(angle => {
+      const px = x + Math.cos(angle) * 50;
+      const py = (y-60) + Math.sin(angle) * 50;
+      circle(px,py,4,'#14F195');
+      ctx.fillStyle=`rgba(20,241,149,${.4*pulse})`;
+      ctx.beginPath();
+      ctx.arc(px,py,8,0,Math.PI*2);
+      ctx.fill();
+    });
+  }
+  
+  // Centre du portail avec anneaux concentriques
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x,y-60,38,0,Math.PI*2);
+  ctx.clip();
+  
+  ctx.fillStyle=`rgba(55,8,115,${.82*pulse})`;
+  ctx.beginPath();
+  ctx.arc(x,y-60,38,0,Math.PI*2);
+  ctx.fill();
+  
+  // Anneaux concentriques animés
+  for(let r=6;r>=0;r--){
+    const a=(.18+r*.06)*pulse;
+    const hue=((F*2.5+r*44))%360;
+    ctx.strokeStyle=`hsla(${hue},100%,62%,${a})`;
+    ctx.lineWidth=2.5;
+    ctx.beginPath();
+    ctx.arc(x,y-60,5+r*5,0,Math.PI*2);
+    ctx.stroke();
+  }
+  
+  // Lueur centrale
+  const cc=ctx.createRadialGradient(x,y-60,0,x,y-60,20);
+  cc.addColorStop(0,`rgba(190,140,255,${.45*pulse})`);
+  cc.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=cc;
+  ctx.beginPath();
+  ctx.arc(x,y-60,20,0,Math.PI*2);
+  ctx.fill();
+  
   ctx.restore();
-  ctx.font='bold 13px "Press Start 2P"';ctx.textAlign='center';ctx.fillStyle='#fff';ctx.shadowColor='#14F195';ctx.shadowBlur=14;ctx.fillText('×'+multip.toFixed(2),x,y-52);ctx.shadowBlur=0;
-  ctx.font='7px "Press Start 2P"';ctx.fillStyle='rgba(20,241,149,.75)';ctx.fillText('CASH OUT',x,y-34);
+  
+  // Texte multiplicateur
+  ctx.font='bold 13px "Press Start 2P"';
+  ctx.textAlign='center';
+  ctx.fillStyle='#fff';
+  ctx.shadowColor='#14F195';
+  ctx.shadowBlur=14;
+  ctx.fillText('×'+multip.toFixed(2),x,y-56);
+  ctx.shadowBlur=0;
+  ctx.font='7px "Press Start 2P"';
+  ctx.fillStyle='rgba(20,241,149,.75)';
+  ctx.fillText('CASH OUT',x,y-38);
 }
 
 // ══════════════════════════════════════════════
@@ -2558,7 +2630,7 @@ function loop(){
             ctx.font = subFontSize + ' "Press Start 2P"';
             ctx.fillStyle = 'rgba(255, 255, 255, ' + (pulseAlpha * 0.8) + ')'; // White for subtitle too
             ctx.shadowBlur = glowIntensity * 0.5;
-            ctx.fillText('(or keep going)', textX, textY + 10);
+            ctx.fillText('OR KEEP GOING', textX, textY + 10);
             
             // Draw bouncing arrow
             const arrowBounce = Math.sin(F * 0.1) * 8;
@@ -2571,27 +2643,8 @@ function loop(){
             ctx.restore();
           }
           
-          // Collision avec le toit du portail (plateforme)
-          const portalRoofY = portal.y - 130; // Position du toit
-          const portalRoofX = portal.x - 54; // Bord gauche du toit
-          const portalRoofW = 108; // Largeur du toit
-          
-          // Vérifier si le héros tombe sur le toit du portail
-          if(hero.vy >= 0) {
-            const heroLeft = hero.x - HERO_W/2;
-            const heroRight = hero.x + HERO_W/2;
-            if(heroRight > portalRoofX && heroLeft < portalRoofX + portalRoofW) {
-              const prevY = hero.y - hero.vy;
-              if(prevY <= portalRoofY && hero.y >= portalRoofY - 4) {
-                hero.y = portalRoofY;
-                hero.vy = 0;
-                hero.onGround = true;
-                hero.doubleJump = false;
-              }
-            }
-          }
-          
-          if(ovlp(hrx-camX,hry,HERO_W2,HERO_H2, psx-32,portal.y-115, 64,115))cashOut();
+          // Portal collision (circular hitbox)
+          if(ovlp(hrx-camX,hry,HERO_W2,HERO_H2, psx-38,portal.y-98, 76,76))cashOut();
         }
       }else if(portal.life<=0&&portalOpen){
         portalOpen=false;
