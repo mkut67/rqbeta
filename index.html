@@ -558,57 +558,121 @@ function drawStars(){
 function drawMoon(){
   // Only show moon during night (phase 2) and transitions involving night
   let moonAlpha = 0;
-  if(skyPhase === 2) {
-    moonAlpha = 1;
-  } else if(isTransitioning) {
-    if(targetSkyPhase === 2) {
-      moonAlpha = skyTransition;
-    } else if(skyPhase === 2) {
-      moonAlpha = 1 - skyTransition;
+  let moonY = H*.09; // Default position
+  
+  const t = skyTransition;
+  const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  
+  if(!isTransitioning) {
+    // Not transitioning - show moon only during night
+    if(skyPhase === 2) {
+      moonAlpha = 1;
+      moonY = H*.09;
+    }
+  } else {
+    // Transitioning - handle each case
+    if(skyPhase === 1 && targetSkyPhase === 2) {
+      // Sunset → Night: fade in while rising
+      moonAlpha = eased;
+      moonY = H*.30 + (H*.09 - H*.30) * eased;
+    } else if(skyPhase === 2 && targetSkyPhase === 3) {
+      // Night → Sunrise: SMOOTH fade out while descending
+      moonAlpha = 1 - eased;
+      moonY = H*.09 + (H*.30 - H*.09) * eased;
+    } else if(skyPhase === 2 && targetSkyPhase === 1) {
+      // Night → Sunset: fade out while descending
+      moonAlpha = 1 - eased;
+      moonY = H*.09 + (H*.30 - H*.09) * eased;
+    } else if(skyPhase === 2 && targetSkyPhase === 0) {
+      // Night → Day: fade out
+      moonAlpha = 1 - eased;
+      moonY = H*.09;
     }
   }
   
-  if(moonAlpha <= 0) return;
+  if(moonAlpha <= 0.001) return; // Very small threshold for complete fade
   
-  const mx=((W*.78-camX*.002)%(W*5)+W*5)%W,my=H*.09;
+  const mx=((W*.78-camX*.002)%(W*5)+W*5)%W;
+  
+  // Apply alpha to glow
+  ctx.save();
   ctx.globalAlpha = moonAlpha * 0.13;
-  const g=ctx.createRadialGradient(mx,my,10,mx,my,80);g.addColorStop(0,'rgba(230,220,170,1)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(mx,my,80,0,Math.PI*2);ctx.fill();
+  const g=ctx.createRadialGradient(mx,moonY,10,mx,moonY,80);
+  g.addColorStop(0,'rgba(230,220,170,1)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g;
+  ctx.beginPath();
+  ctx.arc(mx,moonY,80,0,Math.PI*2);
+  ctx.fill();
+  
+  // Apply alpha to moon body
   ctx.globalAlpha = moonAlpha;
-  ctx.fillStyle='#f2eec6';ctx.beginPath();ctx.arc(mx,my,34,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#fffadc';ctx.beginPath();ctx.arc(mx-4,my-4,27,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#e4dc98';ctx.beginPath();ctx.arc(mx+11,my+7,7,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle='#d8d080';ctx.beginPath();ctx.arc(mx-9,my+9,4,0,Math.PI*2);ctx.fill();
-  ctx.globalAlpha=1;
+  ctx.fillStyle='#f2eec6';ctx.beginPath();ctx.arc(mx,moonY,34,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fffadc';ctx.beginPath();ctx.arc(mx-4,moonY-4,27,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#e4dc98';ctx.beginPath();ctx.arc(mx+11,moonY+7,7,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#d8d080';ctx.beginPath();ctx.arc(mx-9,moonY+9,4,0,Math.PI*2);ctx.fill();
+  
+  ctx.restore();
 }
 function drawSun(){
   // Show sun during day (0), sunset (1), and sunrise (3)
   let sunAlpha = 0;
   let sunY = H*.12; // Default position
   
-  if(skyPhase === 0) {
-    sunAlpha = 1;
-    sunY = H*.12; // High in sky
-  } else if(skyPhase === 1) {
-    sunAlpha = 1;
-    sunY = H*.35; // Lower for sunset
-  } else if(skyPhase === 3) {
-    sunAlpha = 1;
-    sunY = H*.38; // Lower for sunrise
-  } else if(isTransitioning) {
-    if(targetSkyPhase === 0 || targetSkyPhase === 1 || targetSkyPhase === 3) {
-      sunAlpha = skyTransition;
-    } else if(skyPhase === 0 || skyPhase === 1 || skyPhase === 3) {
-      sunAlpha = 1 - skyTransition;
+  const t = skyTransition;
+  const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  
+  // Determine alpha and position based on current phase and transition
+  if(!isTransitioning) {
+    // Not transitioning - show sun at fixed position if in sun phase
+    if(skyPhase === 0) {
+      sunAlpha = 1;
+      sunY = H*.12;
+    } else if(skyPhase === 1) {
+      sunAlpha = 1;
+      sunY = H*.35;
+    } else if(skyPhase === 3) {
+      sunAlpha = 1;
+      sunY = H*.38;
     }
-    // Interpolate position during transition
+  } else {
+    // Transitioning - handle each case explicitly
     if(skyPhase === 0 && targetSkyPhase === 1) {
-      sunY = H*.12 + (H*.35 - H*.12) * skyTransition;
+      // Day → Sunset: stay fully visible, move down
+      sunAlpha = 1;
+      sunY = H*.12 + (H*.35 - H*.12) * eased;
+    } else if(skyPhase === 1 && targetSkyPhase === 0) {
+      // Sunset → Day: stay fully visible, move up
+      sunAlpha = 1;
+      sunY = H*.35 + (H*.12 - H*.35) * eased;
+    } else if(skyPhase === 1 && targetSkyPhase === 2) {
+      // Sunset → Night: fade out while continuing down
+      sunAlpha = 1 - eased;
+      sunY = H*.35 + (H*.50 - H*.35) * eased;
+    } else if(skyPhase === 2 && targetSkyPhase === 1) {
+      // Night → Sunset: fade in at sunset position
+      sunAlpha = eased;
+      sunY = H*.35;
+    } else if(skyPhase === 2 && targetSkyPhase === 3) {
+      // Night → Sunrise: fade in while rising from below
+      sunAlpha = eased;
+      sunY = H*.50 + (H*.38 - H*.50) * eased;
+    } else if(skyPhase === 3 && targetSkyPhase === 2) {
+      // Sunrise → Night: fade out
+      sunAlpha = 1 - eased;
+      sunY = H*.38 + (H*.50 - H*.38) * eased;
     } else if(skyPhase === 3 && targetSkyPhase === 0) {
-      sunY = H*.38 + (H*.12 - H*.38) * skyTransition;
+      // Sunrise → Day: stay fully visible, move up
+      sunAlpha = 1;
+      sunY = H*.38 + (H*.12 - H*.38) * eased;
+    } else if(skyPhase === 0 && targetSkyPhase === 3) {
+      // Day → Sunrise: stay fully visible, move down slightly
+      sunAlpha = 1;
+      sunY = H*.12 + (H*.38 - H*.12) * eased;
     }
   }
   
-  if(sunAlpha <= 0) return;
+  if(sunAlpha <= 0.01) return;
   
   const sx=((W*.75-camX*.003)%(W*5)+W*5)%W;
   
@@ -792,6 +856,12 @@ function drawBear(sx,sy,frame){
   const hop=Math.abs(Math.sin(t))*7;
   const x=sx,y=sy-hop;
   const run=Math.sin(t);
+  
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(1.1, 1.1); // 10% bigger
+  ctx.translate(-x, -y);
+  
   ctx.globalAlpha=.14;ellipse2(x,sy+2,20,5,'#000');ctx.globalAlpha=1;
   // legs
   [-1,1].forEach(side=>{
@@ -824,58 +894,50 @@ function drawBear(sx,sy,frame){
   ctx.strokeStyle='#2a1208';ctx.lineWidth=2.5;ctx.lineCap='round';
   ctx.beginPath();ctx.moveTo(x-12,y-56);ctx.lineTo(x-3,y-54);ctx.stroke();
   ctx.beginPath();ctx.moveTo(x+12,y-56);ctx.lineTo(x+3,y-54);ctx.stroke();
+  
+  ctx.restore();
 }
 
 function drawKnight(sx,sy,frame){
-  const t=frame/7*Math.PI*2;
-  const hop=Math.abs(Math.sin(t))*7;
-  const x=sx,y=sy-hop;
-  const run=Math.sin(t);
+  // Load knight sprite frames
+  if (!window.knightFrames) {
+    window.knightFrames = [];
+    const knightPaths = [
+      "assets/images/knight_01.png",
+      "assets/images/knight_02.png"
+    ];
+    knightPaths.forEach(path => {
+      const img = new Image();
+      img.src = path;
+      window.knightFrames.push(img);
+    });
+  }
   
-  // Shadow (plus grande)
-  ctx.globalAlpha=.14;ellipse2(x,sy+2,24,6,'#000');ctx.globalAlpha=1;
+  // Animate between 2 frames
+  const frameIndex = Math.floor(frame / 8) % 2;
+  const img = window.knightFrames[frameIndex];
   
-  // Legs (armored) - plus grandes
-  [-1,1].forEach(side=>{
-    const la=run*side*10;
-    ctx.fillStyle='#606570';ctx.beginPath();ctx.ellipse(x+side*10,y-12,8,14,la*.03,0,Math.PI*2);ctx.fill();
-    rr(x+side*10+la*.5-8,y+3,16,10,3,'#404550');
-  });
-  
-  // Body (armor chest plate) - plus grand
-  ctx.fillStyle='#707888';ctx.beginPath();ctx.ellipse(x,y-35,22,28,0,0,Math.PI*2);ctx.fill();
-  // Chest plate highlights
-  ctx.fillStyle='#8090a0';ctx.beginPath();ctx.ellipse(x-4,y-38,11,20,0,0,Math.PI*2);ctx.fill();
-  
-  // Arms (armored) - plus grandes
-  ctx.fillStyle='#606570';ctx.beginPath();ctx.ellipse(x+20,y-38,9,14,.3,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.ellipse(x-20,y-38,9,14,-.3,0,Math.PI*2);ctx.fill();
-  
-  // Sword in right hand - plus grande
-  ctx.fillStyle='#a0a8b0';rr(x+27,y-42,4,26,1,'#a0a8b0');
-  ctx.fillStyle='#8b7355';rr(x+26,y-18,6,8,2,'#8b7355'); // hilt
-  ctx.fillStyle='#d4af37';rr(x+24,y-13,10,3,1,'#d4af37'); // guard
-  
-  // Helmet - plus grand
-  ctx.fillStyle='#707888';circle(x,y-62,22,'#707888');
-  // Helmet shine
-  ctx.fillStyle='#8898a8';ctx.beginPath();ctx.ellipse(x-5,y-65,8,14,0,0,Math.PI*2);ctx.fill();
-  // Visor slit (dark) - plus large
-  ctx.fillStyle='#1a1820';rr(x-14,y-62,28,7,2,'#1a1820');
-  // Eye glow through visor - plus espacés
-  ctx.fillStyle='#ff4444';circle(x-7,y-62,2.5,'#ff4444');circle(x+7,y-62,2.5,'#ff4444');
-  
-  // Helmet plume/crest - plus grand
-  ctx.fillStyle='#cc3333';
-  ctx.beginPath();
-  ctx.moveTo(x,y-80);
-  ctx.lineTo(x-6,y-72);
-  ctx.lineTo(x-3,y-76);
-  ctx.lineTo(x,y-68);
-  ctx.lineTo(x+3,y-76);
-  ctx.lineTo(x+6,y-72);
-  ctx.closePath();
-  ctx.fill();
+  if (img && img.complete) {
+    const w = 78;  // Width increased by 30% (60 * 1.3)
+    const h = 91;  // Height increased by 30% (70 * 1.3)
+    const x = sx - w/2;
+    const y = sy - h;
+    
+    // Shadow
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(sx, sy + 2, 30, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    
+    // Draw sprite - ensure full opacity
+    ctx.save();
+    ctx.globalAlpha = 1.0;
+    ctx.drawImage(img, x, y, w, h);
+    ctx.restore();
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -2543,7 +2605,7 @@ function loop(){
     
     // Sky transition progress
     if(isTransitioning) {
-      skyTransition += 0.01; // Transition sur ~100 frames
+      skyTransition += 0.005; // Transition plus lente (~200 frames = 3.3 secondes)
       if(skyTransition >= 1) {
         skyTransition = 1;
         skyPhase = targetSkyPhase;
