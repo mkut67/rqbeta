@@ -1835,15 +1835,9 @@ function triggerCrash(){
   sFall();fallPhase=1;
   document.getElementById('crashbig').style.display='block';
   
-  // Afficher "you missed X..." si le multiplicateur max était > 1.01
+  // Afficher "WALL OF DEATH!" en dessous du GAME OVER
   const crashSubEl = document.getElementById('crashsub');
-  if(maxMult > 1.01) {
-    const missedAmount = (bet * maxMult).toFixed(2);
-    const missedUSD = (missedAmount * SOL_PRICE).toFixed(2);
-    crashSubEl.innerHTML = `You missed ×${maxMult.toFixed(2)}<br>${missedAmount} SOL <span style="color:#ff8866;font-size:0.85em">($${missedUSD})</span><br><span style="color:#9945FF;font-size:1em;margin-top:12px;display:block;">SCORE: ${score.toLocaleString()}</span>`;
-  } else {
-    crashSubEl.innerHTML = `<span style="color:#9945FF;font-size:1.2em;">SCORE: ${score.toLocaleString()}</span>`;
-  }
+  crashSubEl.innerHTML = `WALL OF DEATH!`;
   
   document.getElementById('palert').classList.remove('on');
 }
@@ -2486,6 +2480,9 @@ function loop(){
           const missedUSD = (missedAmount * SOL_PRICE).toFixed(2);
           titleHTML += '<br><br><span style="color:#ff6644;font-size:18px;">You missed ×'+maxMult.toFixed(2)+'<br>'+missedAmount+' SOL <span style="color:#ff8866;font-size:0.9em">($'+missedUSD+')</span></span>';
         }
+        
+        // Ajouter le score
+        titleHTML += '<br><br><span style="color:#9945FF;font-size:16px;">SCORE: '+score.toLocaleString()+'</span>';
         
         document.getElementById('otit').innerHTML = titleHTML;
         document.getElementById('ores').className='ores lose';
