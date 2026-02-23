@@ -1752,7 +1752,7 @@ function nextWave(){
   wConf=waveDifficulty(waveNum-1,totalWaves,maxMult);
   waveDur=wConf.dur;waveTimer=0;eSp=0;pSp=0;tSp=0;bSp=0;
   spd=baseSpd+wConf.spdB;
-  if(hero.invincible)spd*=1.5; // keep boost if still invincible
+  if(hero.invincible)spd*=1.5; // keep x1.5 boost if still invincible
   portal=null;portalOpen=false;
   document.getElementById('palertmsg').textContent='wait for next portal to cash out';
   document.getElementById('pwtxt').style.display='none';
@@ -2814,13 +2814,16 @@ function loop(){
       if(ovlp(hrx-camX,hry,HERO_W2,HERO_H2, sx-bw/2,GY-bh,bw,bh)){
         hero.invincible=true;hero.inv=480; // 8 seconds at 60fps
         
+        // IMMEDIATE SPEED BOOST - recalculate spd right now
+        spd = (baseSpd + (wConf ? wConf.spdB : 0)) * 1.5;
+        
         // Immediate visual feedback
         flash('#FFD700',18);
         spawnParts(b.x,GY-50,'#FFD700',20,8);spawnParts(b.x,GY-50,'#ffffff',12,6);
         sBull();
         
         // UI updates
-        document.getElementById('invbanner').textContent='⚡ INVINCIBLE! ×1.5 SPEED!';
+        document.getElementById('invbanner').textContent='⚡ INVINCIBLE!';
         document.getElementById('invbanner').style.color = '#FFD700';
         document.getElementById('invbanner').classList.add('on');
         updateHUD();
