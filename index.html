@@ -2142,7 +2142,9 @@ function spawnBull(){bulls.push({x:hero.x+W+Math.random()*120,t:0});}
 function spawnUnicorn(){
   // Très rare - maximum 1 licorne par partie
   // Ne pas spawn après le dernier portail (inutile)
-  if(!unicorn && !unicornSpawned && waveNum < totalWaves && Math.random() < 0.0001) { // 0.01% de chance par frame = très rare
+  // Doubled probability during honeymoon
+  const unicornProb = isHoneymoonPhase() ? 0.0002 : 0.0001;
+  if(!unicorn && !unicornSpawned && waveNum < totalWaves && Math.random() < unicornProb) { // Très rare, doublé en honeymoon
     const heights = [GY-120, GY-160, GY-200, GY-240];
     unicorn = {
       x: hero.x + W + 100,
@@ -2620,7 +2622,9 @@ function loop(){
     if(hero.inv>0)hero.inv--;
     
     if(hero.invincible&&hero.inv<=0){
-      hero.invincible=false;spd=baseSpd+wConf.spdB;updateHUD();
+      hero.invincible=false;
+      spd=baseSpd+wConf.spdB; // Reset to normal speed
+      updateHUD();
       
       // Reprendre la musique appropriée (fire si firepower actif, sinon normale)
       const bgMusic = document.getElementById('bgmusic');
@@ -2656,7 +2660,10 @@ function loop(){
       if(eSp<wConf.bearN&&Math.random()<.02){spawnBear();eSp++;}
       if(pSp<wConf.projN&&Math.random()<.01){spawnProj();pSp++;}
       if(tSp<wConf.coinN&&Math.random()<.0088){spawnCoin();tSp++;} // +10% spawn rate
-      if(!bullSpawned && Math.random()<0.0002&&(bulls.length===0||(hero.x-bulls[bulls.length-1].x)>W*1.5)){spawnBull(); bullSpawned=true;}
+      
+      // Bull spawn: 0.00022 base (+10%), doubled during honeymoon
+      const bullProb = isHoneymoonPhase() ? 0.00044 : 0.00022;
+      if(!bullSpawned && Math.random()<bullProb&&(bulls.length===0||(hero.x-bulls[bulls.length-1].x)>W*1.5)){spawnBull(); bullSpawned=true;}
     }else if(wConf&&waveTimer>=waveDur&&!portalOpen&&!spikeWall&&!spikeWallPending){endWave();}
 
     const targetH=90,targetW=raccoonFrames[0].naturalWidth?raccoonFrames[0].naturalWidth/raccoonFrames[0].naturalHeight*targetH:52;
@@ -2807,6 +2814,19 @@ function loop(){
       if(ovlp(hrx-camX,hry,HERO_W2,HERO_H2, sx-bw/2,GY-bh,bw,bh)){
         hero.invincible=true;hero.inv=480; // 8 seconds at 60fps
         
+        // Immediate visual feedback
+        flash('#FFD700',18);
+        spawnParts(b.x,GY-50,'#FFD700',20,8);spawnParts(b.x,GY-50,'#ffffff',12,6);
+        sBull();
+        
+        // UI updates
+        document.getElementById('invbanner').textContent='⚡ INVINCIBLE! ×1.5 SPEED!';
+        document.getElementById('invbanner').style.color = '#FFD700';
+        document.getElementById('invbanner').classList.add('on');
+        updateHUD();
+        score += 100;
+        updateScore();
+        
         // Transition vers la musique d'invincibilité
         const bgMusic = document.getElementById('bgmusic');
         const invMusic = document.getElementById('invmusic');
@@ -2822,15 +2842,6 @@ function loop(){
         invMusic.currentTime = 0;
         invMusic.play().catch(e => console.log('Invincible music play prevented:', e));
         
-        score += 100; // 100 points pour le taureau doré
-        updateScore();
-        
-        spawnParts(b.x,GY-50,'#FFD700',20,8);spawnParts(b.x,GY-50,'#ffffff',12,6);
-        sBull();flash('#FFD700',18);
-        document.getElementById('invbanner').textContent='⚡ INVINCIBLE! ×1.5 SPEED!';
-        document.getElementById('invbanner').style.color = '#FFD700'; // Réinitialiser la couleur dorée
-        document.getElementById('invbanner').classList.add('on');
-        updateHUD();
         return false;
       }
       return true;
